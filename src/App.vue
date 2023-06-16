@@ -143,4 +143,20 @@ export default {
   background: linear-gradient(#EDF8F7, #BBFBF3) no-repeat;
   height: 100vh;
 }
+.bigbox {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  height: 90vh;
+}
+.seperate-line {
+  width: 100%;
+  height: 2px;
+  background-color: #ccc;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem; 
+}
+.inputBox {
+  height: 10vh;
+  bottom: 1rem;
+}
 </style>

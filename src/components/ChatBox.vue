@@ -94,8 +94,8 @@ export default {
 <style scoped>
 .chatbox-container {
     overflow-y: auto;
-    height: 35rem;
-    /* 这里要改，改成适应屏幕高度，自动到最底部 */
+    /* height: 70vh;
+    border: 1px solid #ccc; */
 }
 .each-chat-container {
     margin-top: 1rem;
