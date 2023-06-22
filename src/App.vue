@@ -55,6 +55,7 @@ export default {
   },
   data() {
     return {
+      leftSeconds: 0,
       tapMeBg: "#b6dfd1",
       isSpeakMode: false,
       isSpeaking: false,
@@ -110,13 +111,12 @@ export default {
         }
     },
     async startOrStopSpeak() {
+      this.isSpeaking = !this.isSpeaking
       if (this.isSpeaking) {
-        this.endSpeak()
-        this.recorder.destroy().then(() => {
-          console.log('destroyed')
-        })
+        await this.startSpeak()
+        this.recorder.destroy()
       } else {
-        this.startSpeak()
+        await this.endSpeak()
       }
     },
     async startSpeak(){
@@ -129,11 +129,6 @@ export default {
           AlertComponent.showAlert("你的浏览器不支持访问用户媒体设备");
           return 
         }
-        // this.recorder = new Recorder({
-        //   sampleBits: 16, // 采样位数，支持 8 或 16，默认是16
-        //   sampleRate: 16000, // 采样率，支持 11025、16000、22050、24000、44100、48000，根据浏览器默认值，我的chrome是48000
-        //   numChannels: 1, // 声道，支持 1 或 2， 默认是1
-        // })
       }
 
       // 初始化chat history
@@ -142,25 +137,32 @@ export default {
         this.chatId = this.ChatHistory.chatId
       }
 
-      this.isSpeaking = true
-      this.$refs.speakButton.innerText = "Stop"
-      // try {
-      //   await Recorder.getPermission(); // 获取麦克风权限
-      // } catch (error) {
-      //   AlertComponent.showAlert("请允许使用麦克风")
-      //   console.log(error)
-      // }
+      this.leftSeconds = 60
+      this.$refs.speakButton.innerText = "Stop (" + this.leftSeconds + ")"
       try {
-        await this.recorder.start(); // 开始录音
+        this.recorder.start(); // 开始录音
+        while (this.leftSeconds > 0 && this.isSpeaking) {
+          this.leftSeconds -= 1
+          this.$refs.speakButton.innerText = "Stop (" + this.leftSeconds + ")"
+          await this.sleep(1000)
+        }
+        // 到达60s自动停止
+        if (this.leftSeconds == 0 && this.isSpeaking) {
+          this.startOrStopSpeak()
+        } else {
+          return 
+        }
       } catch (error) {
         this.recorder.destroy()
         AlertComponent.showAlert("请允许使用麦克风")
         console.log(error)
       }
     },
+    sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    },
     async endSpeak(){
       this.recorder.stop();
-      this.isSpeaking = false
       this.$refs.speakButton.innerText = "Press to Speak"
       // 转文本
       let audioBlob = this.recorder.getWAVBlob();

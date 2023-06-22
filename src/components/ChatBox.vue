@@ -33,8 +33,10 @@ export default {
         },
         async newPrompt(text, chatId, gptKeys, ChatHistory, azureKey, azureRegion) {
             // 如果无法识别语音，即语音为undefined，则提示用户重新输入
-            if (text == null || text == undefined || text == "") {
+            if (text == null || text == undefined) {
                 throw new Error("语音识别失败，请重试")
+            } else if (text == "") {
+                throw new Error("输入为空")
             }
 
             // 同时加入conversationShow和ChatHistory
