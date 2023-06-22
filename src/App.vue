@@ -113,10 +113,9 @@ export default {
     async startOrStopSpeak() {
       this.isSpeaking = !this.isSpeaking
       if (this.isSpeaking) {
-        await this.startSpeak()
-        this.recorder.destroy()
+        this.startSpeak()
       } else {
-        await this.endSpeak()
+        this.endSpeak()
       }
     },
     async startSpeak(){
@@ -137,20 +136,17 @@ export default {
         this.chatId = this.ChatHistory.chatId
       }
 
-      this.leftSeconds = 60
-      this.$refs.speakButton.innerText = "Stop (" + this.leftSeconds + ")"
+      this.$refs.speakButton.innerText = "Stop(" + this.leftSeconds + ")"
       try {
-        this.recorder.start(); // 开始录音
+        this.leftSeconds = 60
+        await this.recorder.start(); // 开始录音
         while (this.leftSeconds > 0 && this.isSpeaking) {
+          await new Promise(resolve => setTimeout(resolve, 1000))
           this.leftSeconds -= 1
-          this.$refs.speakButton.innerText = "Stop (" + this.leftSeconds + ")"
-          await this.sleep(1000)
+          this.$refs.speakButton.innerText = "Stop(" + this.leftSeconds + ")"
         }
-        // 到达60s自动停止
         if (this.leftSeconds == 0 && this.isSpeaking) {
-          this.startOrStopSpeak()
-        } else {
-          return 
+          this.endSpeak()
         }
       } catch (error) {
         this.recorder.destroy()
@@ -158,14 +154,12 @@ export default {
         console.log(error)
       }
     },
-    sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    },
     async endSpeak(){
       this.recorder.stop();
       this.$refs.speakButton.innerText = "Press to Speak"
       // 转文本
       let audioBlob = this.recorder.getWAVBlob();
+      this.recorder.destroy()
       let text = null
       try {
         text = await SpeechUtil.methods.speechToText(this.azureKey, this.azureRegion, audioBlob)
