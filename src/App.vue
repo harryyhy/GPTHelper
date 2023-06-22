@@ -50,7 +50,6 @@ export default {
     window.addEventListener('resize', () => {
       // We execute the same script as before
       let vh = window.innerHeight * 0.01
-      console.log(vh);
       document.documentElement.style.setProperty('--vh', `${vh}px`)
     })
   },
@@ -59,12 +58,17 @@ export default {
       tapMeBg: "#b6dfd1",
       isSpeakMode: false,
       isSpeaking: false,
-      recorder: null,
+      recorder: new Recorder({
+          sampleBits: 16, // 采样位数，支持 8 或 16，默认是16
+          sampleRate: 16000, // 采样率，支持 11025、16000、22050、24000、44100、48000，根据浏览器默认值，我的chrome是48000
+          numChannels: 1, // 声道，支持 1 或 2， 默认是1
+        }),
       inputBoxValue: "",
       chatId: null,
       gptKey: "",
       azureKey: "",
       azureRegion: "",
+      microAvailable: null,
     }
   },
   methods: {
@@ -117,20 +121,19 @@ export default {
     },
     async startSpeak(){
       // 判断是否支持访问用户媒体设备
-      if (this.recorder == null) {
+      if (this.microAvailable == null || this.microAvailable == false) {
         if (navigator.mediaDevices.getUserMedia || navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia) {
           await this.getUserMedia({ audio: true }); // 调用用户媒体设备，访问摄像头、录音
+          this.microAvailable = true
         } else {
           AlertComponent.showAlert("你的浏览器不支持访问用户媒体设备");
           return 
         }
-
-        this.recorder = new Recorder({
-          sampleBits: 16, // 采样位数，支持 8 或 16，默认是16
-          sampleRate: 16000, // 采样率，支持 11025、16000、22050、24000、44100、48000，根据浏览器默认值，我的chrome是48000
-          numChannels: 1, // 声道，支持 1 或 2， 默认是1
-        })
-
+        // this.recorder = new Recorder({
+        //   sampleBits: 16, // 采样位数，支持 8 或 16，默认是16
+        //   sampleRate: 16000, // 采样率，支持 11025、16000、22050、24000、44100、48000，根据浏览器默认值，我的chrome是48000
+        //   numChannels: 1, // 声道，支持 1 或 2， 默认是1
+        // })
       }
 
       // 初始化chat history

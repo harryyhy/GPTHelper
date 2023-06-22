@@ -94,9 +94,8 @@ export default {
 <style scoped>
 .chatbox-container {
     overflow-y: auto;
-    height: 70vh;
-    /* height: 70vh;
-    border: 1px solid #ccc; */
+    height: 60vh;
+    height: calc(var(--vh, 1vh) * 60);
 }
 .each-chat-container {
     margin-top: 1rem;
