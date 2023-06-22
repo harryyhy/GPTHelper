@@ -16,13 +16,13 @@
   </div>
 
   <div class="inputBox container">
-    <div class="input-group form-floting container" style="background-color: transparent; padding-left: 5rem;">
-        <button class="btn btn-dark" data-bs-toggle="button" type="button" @click="changeMode()" style="width: 5rem; margin-left: -5rem; float: left;">Tap Me</button>
+    <div class="input-group form-floting container" style="background-color: transparent; padding-left: 5rem; ">
+        <button class="btn" ref="tapMe" type="button" @click="changeMode()" style="width: 5rem; margin-left: -5rem; float: left; border: 1px #95b69c solid; font-weight: bold;" v-bind:style="{ backgroundColor: tapMeBg }">Speak</button>
         <!-- TYPE IN -->
         <input type="text" class="form-control" placeholder="Type here" v-if="!isSpeakMode" ref="inputBox" @keydown.enter="sendPrompt(this.$refs.inputBox.value)" v-model="this.inputBoxValue">
-        <button  type="button" v-if="!isSpeakMode" @click="sendPrompt(this.$refs.inputBox.value)" style="font-weight: bold;">Send</button>
+        <button class="btn" type="button" v-if="!isSpeakMode" @click="sendPrompt(this.$refs.inputBox.value)" style="font-weight: bold; border: 1px #95b69c solid; background-color: #b6dfd1;">Send</button>
         <!-- SPEAK -->
-        <button  style="width: 100%; float: right;" type="button" v-if="isSpeakMode" @mousedown="startSpeak" @mouseup="endSpeak" ref="speakButton" @touchstart="startSpeak" @touchend="endSpeak">Press to speak!</button>
+        <button ref="speakButton" class="btn" style="width: 100%; float: right; background-color: #b1edbf; border: 1px #95b69c solid; font-weight: bold;" type="button" v-if="isSpeakMode" @click="startOrStopSpeak">Press to speak!</button>
     </div>
   </div>
   </div>
@@ -40,15 +40,26 @@ export default {
   components: {
     ChatBox,
   },
+  mounted() {   // 设置100vh == innerHeight
+    // First we get the viewport height and we multiple it by 1% to get a value for a vh unit
+    let vh = window.innerHeight * 0.01
+    // Then we set the value in the --vh custom property to the root of the document
+    document.documentElement.style.setProperty('--vh', `${vh}px`)
+
+    // We listen to the resize event
+    window.addEventListener('resize', () => {
+      // We execute the same script as before
+      let vh = window.innerHeight * 0.01
+      console.log(vh);
+      document.documentElement.style.setProperty('--vh', `${vh}px`)
+    })
+  },
   data() {
     return {
+      tapMeBg: "#b6dfd1",
       isSpeakMode: false,
       isSpeaking: false,
-      recorder: new Recorder({
-        sampleBits: 16, // 采样位数，支持 8 或 16，默认是16
-        sampleRate: 16000, // 采样率，支持 11025、16000、22050、24000、44100、48000，根据浏览器默认值，我的chrome是48000
-        numChannels: 1, // 声道，支持 1 或 2， 默认是1
-      }),
+      recorder: null,
       inputBoxValue: "",
       chatId: null,
       gptKey: "",
@@ -57,31 +68,92 @@ export default {
     }
   },
   methods: {
+    async getUserMedia(constrains) {
+      let that = this;
+      if (navigator.mediaDevices.getUserMedia) {
+        // 最新标准API
+        navigator.mediaDevices.getUserMedia(constrains).then(stream => { that.success(stream); }).catch(err => { that.error(err); });
+      } else if (navigator.webkitGetUserMedia) {
+        // webkit内核浏览器
+        navigator.webkitGetUserMedia(constrains).then(stream => { that.success(stream); }).catch(err => { that.error(err); });
+      } else if (navigator.mozGetUserMedia) {
+        // Firefox浏览器
+        navigator.mozGetUserMedia(constrains).then(stream => { that.success(stream); }).catch(err => { that.error(err); });
+      } else if (navigator.getUserMedia) {
+        // 旧版API
+        navigator.getUserMedia(constrains).then(stream => { that.success(stream); }).catch(err => { that.error(err); });
+      }
+    },
+    // 成功的回调函数
+    success() {
+      AlertComponent.showAlert("已点击允许,开启成功");
+    },
+    // 异常的回调函数
+    error(error) {
+      AlertComponent.showAlert(error)
+      // AlertComponent.showAlert("访问用户媒体设备失败：", error.name, error.message);
+    },
     clean(){
       this.$refs.ChatBox.clean()
       this.chatId = null
     },
-    changeMode() {
+    changeMode() {    // 改变输入框样式
         this.isSpeakMode = !this.isSpeakMode
+        if (this.isSpeakMode) {
+          this.tapMeBg = "#95b69c"
+        } else {
+          this.tapMeBg = "#b6dfd1"
+        }
     },
-    startSpeak(){
+    async startOrStopSpeak() {
+      if (this.isSpeaking) {
+        this.endSpeak()
+        this.recorder.destroy().then(() => {
+          console.log('destroyed')
+        })
+      } else {
+        this.startSpeak()
+      }
+    },
+    async startSpeak(){
+      // 判断是否支持访问用户媒体设备
+      if (this.recorder == null) {
+        if (navigator.mediaDevices.getUserMedia || navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia) {
+          await this.getUserMedia({ audio: true }); // 调用用户媒体设备，访问摄像头、录音
+        } else {
+          AlertComponent.showAlert("你的浏览器不支持访问用户媒体设备");
+          return 
+        }
+
+        this.recorder = new Recorder({
+          sampleBits: 16, // 采样位数，支持 8 或 16，默认是16
+          sampleRate: 16000, // 采样率，支持 11025、16000、22050、24000、44100、48000，根据浏览器默认值，我的chrome是48000
+          numChannels: 1, // 声道，支持 1 或 2， 默认是1
+        })
+
+      }
+
+      // 初始化chat history
       if (this.chatId == null) {
         this.ChatHistory = new ChatHistory()
         this.chatId = this.ChatHistory.chatId
       }
 
       this.isSpeaking = true
-      this.$refs.speakButton.innerText = "Speaking"
-      // 录制声音。。。
-      Recorder.getPermission().then(
-        () => {
-          this.recorder.start(); // 开始录音
-        },
-        (error) => {
-          AlertComponent.showAlert("请允许使用麦克风")
-          console.log(error)
-        }
-      )
+      this.$refs.speakButton.innerText = "Stop"
+      // try {
+      //   await Recorder.getPermission(); // 获取麦克风权限
+      // } catch (error) {
+      //   AlertComponent.showAlert("请允许使用麦克风")
+      //   console.log(error)
+      // }
+      try {
+        await this.recorder.start(); // 开始录音
+      } catch (error) {
+        this.recorder.destroy()
+        AlertComponent.showAlert("请允许使用麦克风")
+        console.log(error)
+      }
     },
     async endSpeak(){
       this.recorder.stop();
@@ -96,7 +168,7 @@ export default {
         AlertComponent.showAlert("语音识别失败，请重试")
         return
       }
-      await this.sendPrompt(text)
+      this.sendPrompt(text)
     },
     async sendPrompt(prompt){
       this.inputBoxValue = ""
@@ -141,12 +213,15 @@ export default {
 }
 .home {
   background: linear-gradient(#EDF8F7, #BBFBF3) no-repeat;
-  height: 100vh;
+  height: 100vh;  /* 先设置这个，防止浏览器不支持 */
+  height: calc(var(--vh, 1vh) * 100);
 }
 .bigbox {
+  user-select: none;
   padding-top: 1rem;
   padding-bottom: 1rem;
   height: 90vh;
+  height: calc(var(--vh, 1vh) * 90);
 }
 .seperate-line {
   width: 100%;
@@ -154,9 +229,12 @@ export default {
   background-color: #ccc;
   margin-top: 1rem;
   margin-bottom: 0.5rem; 
+  /* background-color: #b6dfd1; */
 }
 .inputBox {
+  user-select: none;
   height: 10vh;
+  height: calc(var(--vh, 1vh) * 10);
   bottom: 1rem;
 }
 </style>

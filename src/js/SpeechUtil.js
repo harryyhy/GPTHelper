@@ -54,6 +54,7 @@ export default {
                 })
             } catch (err) {
                 console.error(err)
+                throw new Error("语音识别失败。")
             }
             return res.data.DisplayText
         },

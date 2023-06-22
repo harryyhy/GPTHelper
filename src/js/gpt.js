@@ -31,7 +31,7 @@ export default {
                 const response = await axios.post(url, params, { headers })
                 return response.data.choices[0].message
             } catch (error) {
-                console.log(error)
+                console.error(error)
                 throw new Error("GPT调用失败。")
             }
         }

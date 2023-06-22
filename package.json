@@ -12,7 +12,8 @@
     "bootstrap": "^5.3.0-alpha1",
     "core-js": "^3.8.3",
     "js-audio-recorder": "^1.0.7",
-    "microsoft-cognitiveservices-speech-sdk": "^1.28.0",
+    "microsoft-cognitiveservices-speech-sdk": "^1.29.0",
+    "uuid": "^9.0.0",
     "vue": "^3.2.13"
   },
   "devDependencies": {

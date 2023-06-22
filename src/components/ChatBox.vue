@@ -49,7 +49,7 @@ export default {
             try {
                 // 调用chatgpt
                 let res = null
-                console.log(ChatHistory.chats[chatId])
+                // console.log(ChatHistory.chats[chatId])
                 res = await gpt.methods.sendRequest(ChatHistory.chats[chatId], gptKeys)
                 if (res == undefined || res == null) {
                     throw new Error("chatgpt请求失败")
@@ -60,7 +60,7 @@ export default {
                 // 调用azure
                 this.callAzure(res.content, azureKey, azureRegion)
             } catch (error) {
-                console.log(error)
+                console.error(error)
                 throw error
             }
         },
@@ -69,7 +69,7 @@ export default {
             try {
                 this.audioUrl = await SpeechUtil.methods.synthesizeSpeech(text, azureKey, azureRegion)
             } catch (error) {
-                console.log(error)
+                console.error(error)
                 throw new Error("azure请求失败")
             }
             if (this.audioPlayer != null) {
@@ -94,6 +94,7 @@ export default {
 <style scoped>
 .chatbox-container {
     overflow-y: auto;
+    height: 70vh;
     /* height: 70vh;
     border: 1px solid #ccc; */
 }
